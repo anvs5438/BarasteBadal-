@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Quiz — Polished (Syam Prasad)</title>
+<link href="https://fonts.googleapis.com/css?family=Orbitron:700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#291c6e;
+  --bg2:#00167d;
+  --panel:#12132a;
+  --accent:#2debb0;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  background: radial-gradient(circle at 10% 10%, #06104a 0%, var(--bg1) 25%, var(--bg2) 70%);
+  font-family: "Orbitron", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color:#dfe;
+  padding:28px 12px;
+}
+.container{
+  width:820px;
+  max-width:96%;
+  border-radius:18px;
+  overflow:hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.25) 100%);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.03);
+}
+.header{
+  background: linear-gradient(90deg,#9b36ff 20%, #53f0d6 100%);
+  padding:20px 18px;
+  text-align:center;
+  color:#fff;
+  font-size:26px;
+  font-weight:700;
+  letter-spacing:1px;
+}
+.controls{
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  align-items:center;
+  padding:12px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.12), rgba(0,0,0,0.06));
+  flex-wrap:wrap;
+}
+.control-item{ display:flex; align-items:center; gap:8px; }
+.select, .small-btn, .num-input{
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: #dff;
+  padding:7px 10px;
+  border-radius:8px;
+  font-weight:700;
+}
+.small-btn{
+  background: linear-gradient(90deg,#4ef1c7,#3abf8b);
+  border:none;
+  cursor:pointer;
+  padding:9px 14px;
+}
+.num-input{ width:84px; padding:8px; color:#000; background:#fff; border-radius:8px; font-weight:700; }
+.panel{ padding:16px; position:relative; background: linear-gradient(180deg, rgba(5,8,30,0.6), var(--panel)); }
+.top-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+.qbox{ background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:18px; margin-top:12px; box-shadow: 0 10px 30px rgba(0,0,0,0.35); border-left:6px solid var(--accent, rgba(45,235,176,0.12)); }
+.question { font-size:20px; color:#e6fff7; margin-bottom:14px; }
+
+.options { display:flex; flex-direction:column; gap:12px; }
+.answer-btn{ display:flex; align-items:center; justify-content:center; padding:14px 18px; border-radius:12px; background: linear-gradient(90deg,#2f00c8,#4b2bff); color:#fff; font-size:18px; font-weight:800; border: 2px solid rgba(255,255,255,0.06); cursor:pointer; transition: transform 140ms, box-shadow 160ms, background 160ms; box-shadow: 0 6px 24px rgba(30,20,60,0.35); user-select:none; text-align:center; }
+.answer-btn:hover{ transform: translateY(-3px); }
+.answer-btn:active{ transform: translateY(-1px); }
+.answer-btn[disabled]{ opacity:0.9; cursor:default; transform:none; }
+
+@keyframes flashCorrect { 0%{transform:scale(1)} 40%{transform:scale(1.02)} 100%{transform:none} }
+@keyframes flashWrong { 0%{transform:scale(1)} 40%{transform:scale(1.02)} 100%{transform:none} }
+.answer-btn.correct { background: #FFD700; border-color:#FFD700; color:#000; animation: flashCorrect 420ms ease; box-shadow:0 8px 28px rgba(255,215,0,0.16); }
+.answer-btn.incorrect { background: #B22222; border-color:#8B0000; color:#fff; animation: flashWrong 420ms ease; box-shadow:0 8px 28px rgba(178,34,34,0.12); }
+
+.progress-bar{ height:8px; background: rgba(255,255,255,0.03); border-radius:8px; margin:18px 0; overflow:hidden; }
+.progress{ height:100%; width:0%; background: linear-gradient(90deg,#3a1bff,#5ec0ff); transition:width 200ms; }
+.counter{ text-align:center; color: #9fffe7; font-weight:700; padding:6px; margin-top:6px; }
+
+/* Timer styles */
+.time-left { font-weight: 700; margin-top: 8px; }
+.time-left-label { color: #FFB400; }
+#timer { color: #B22222 !important; font-weight:900; font-size:20px; }
+#activityTimer { color: #ffffff !important; font-weight:800; font-size:13px; margin-top:6px; letter-spacing:1px; }
+
+.footer{ padding:20px; height:56px; }
+
+@media (max-width:760px){
+  .top-row{ flex-direction:column; }
+  .answer-btn{ font-size:16px; padding:12px; }
+  .container{ padding-bottom:20px; }
+}
+</style>
+</head>
+<body>
+<div class="container" role="application" aria-label="Quiz app">
+  <div class="header">QUIZ (శ్యాం ప్రసాద్)</div>
+
+  <div class="controls" role="region" aria-label="Quiz controls">
+    <div class="control-item" title="Number of choices per question">
+      <label style="font-weight:700">Choices:</label>
+      <select id="choiceSelect" class="select" aria-label="Choices"></select>
+      <input id="choiceCustom" class="num-input" type="number" placeholder="Custom" style="display:none;" min="1" />
+    </div>
+
+    <div class="control-item" title="Number of questions">
+      <label style="font-weight:700">Questions:</label>
+      <select id="countSelect" class="select" aria-label="Questions count"></select>
+      <input id="countCustom" class="num-input" type="number" placeholder="Custom" style="display:none;" min="1" />
+    </div>
+
+    <div class="control-item" title="Countdown seconds">
+      <label style="font-weight:700">Time (s):</label>
+      <select id="timeSelect" class="select" aria-label="Time seconds"></select>
+      <input id="timeCustom" class="num-input" type="number" placeholder="Seconds" style="display:none;" min="0" />
+    </div>
+
+    <div class="control-item" title="Enable or disable countdown">
+      <label style="font-weight:700"><input id="timerEnable" type="checkbox" style="transform:scale(1.1); margin-right:8px;" /> Enable Timer</label>
+    </div>
+
+    <div class="control-item" title="Enable mistake limit">
+      <label style="font-weight:700"><input id="mistakeEnable" type="checkbox" style="transform:scale(1.1); margin-right:8px;" /> Limit Mistakes</label>
+      <select id="mistakeSelect" class="select" style="margin-left:6px;"></select>
+      <input id="mistakeCustom" class="num-input" type="number" placeholder="Custom" style="display:none; margin-left:6px;" min="0" />
+    </div>
+
+    <div class="control-item">
+      <label style="font-weight:700">Theme:</label>
+      <select id="themeSelect" class="select" aria-label="Theme"></select>
+    </div>
+
+    <div class="control-item">
+      <button id="startBtn" class="small-btn" aria-label="Start quiz">Start / Restart</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="top-row">
+      <div style="width:68%">
+        <div class="qbox" id="qbox" aria-live="polite">
+          <div id="quiz">Press Start to begin</div>
+        </div>
+      </div>
+
+      <div style="width:30%; padding-left:12px; text-align:right;">
+        <div class="time-left"><span class="time-left-label">Time Left:</span> <span id="timer">--:--</span></div>
+        <div id="activityTimer" aria-label="Elapsed time">00:00</div>
+        <div style="height:8px"></div>
+        <div class="progress-bar"><div id="progress" class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div></div>
+        <div class="counter" id="counter">Question 0 of 0</div>
+        <div class="counter" id="mistakesLeft" style="margin-top:10px; color:#ffb3b3; display:none;">Mistakes left: --</div>
+      </div>
+    </div>
+    <div class="footer"></div>
+  </div>
+</div>
+
+<script>
+const questions = [
+  {
+    "question": "1. सावन के मेघ बरसते हैं।",
+    "options": ["A) अंबर", "B) बादल", "C) पवन", "D) पानी"],
+    "answer": "B) बादल"
+  },
+  {
+    "question": "2. तरुओं से पानी की बूँदें गिरती हैं।",
+    "options": ["A) पत्थर", "B) फूल", "C) पेड़", "D) फल"],
+    "answer": "C) पेड़"
+  },
+  {
+    "question": "3. दिन के तम में सपने जगते मन के।",
+    "options": ["A) ताप", "B) अंधकार", "C) उजाला", "D) tap"],
+    "answer": "B) अंधकार"
+  },
+  {
+    "question": "4. घन के उर में बिजली चमक रही है",
+    "options": ["A) पेट", "B) पैर", "C) दिमाग", "D) हृदय"],
+    "answer": "D) हृदय"
+  },
+  {
+    "question": "5. मेघ गगन में गर्जन करते हैं।",
+    "options": ["A) आसमान", "B) बादल", "C) चाँद", "D) तारा"],
+    "answer": "A) आसमान"
+  },
+  {
+    "question": "6. दादुर टर - टर करते हैं",
+    "options": ["A) झिल्ली", "B) मेंढ़क", "C) चातक", "D) मछली"],
+    "answer": "B) मेंढ़क"
+  },
+  {
+    "question": "7. सोनबालक आर्द्र सुख से क्रंदन करते हैं",
+    "options": ["A) अग्निपक्षी", "B) जल पक्षी", "C) गोडावण", "D) गरुड पक्षी"],
+    "answer": "B) जल पक्षी"
+  },
+  {
+    "question": "8. पक्षी आर्द - सुख से क्रंदन करते हैं",
+    "options": ["A) गर्दन", "B) बोलना", "C) चिल्लाना", "D) गाना"],
+    "answer": "C) चिल्लाना"
+  },
+  {
+    "question": "9. रोम सिहर उठते छूते वे भीतर अंतर ।",
+    "options": ["A) चर्म", "B) बाल", "C) जीभ", "D) हाथ"],
+    "answer": "B) बाल"
+  },
+  {
+    "question": "10. धाराओं पर धाराएँ झरती धरती पर।",
+    "options": ["A) निरंतर प्रवाह", "B) धागा", "C) धारण", "D) बहाव"],
+    "answer": "A) निरंतर प्रवाह"
+  },
+  {
+    "question": "11. पर्व के समय मकान में सोने के लिए भीतर भी जगह नहीं न कि बाहर भी।",
+    "options": ["A) पर्व × जगह", "B) मकान × जगह", "C) भीतर × बाहर", "D) सोना × पर्व"],
+    "answer": "C) भीतर × बाहर"
+  },
+  {
+    "question": "12. हमें अपने माता- पिता के हाथ पकдना चाहिए न कि छोडना चाहिए।",
+    "options": ["A) अपना × छोडना", "B) माता × हाथ", "C) पकडना × छोडना", "D) पकडना × हाथ"],
+    "answer": "C) पकडना × छोडना"
+  },
+  {
+    "question": "13. हमें किसी भी काम को दिन के उजाले में करना है न कि रात में।",
+    "options": ["A) उजाला × रात", "B) दिन × रात", "C) काम × किसी", "D) करना × किसी"],
+    "answer": "B) दिन × रात"
+  },
+  {
+    "question": "14. वर्षा के समय सपने जगते हैं मगर तम में सभी सोते हैं।",
+    "options": ["A) वर्षा × तम", "B) सपने × सभी", "C) मगर × वर्षा", "D) जगते × सोते"],
+    "answer": "D) जगते × सोते"
+  },
+  {
+    "question": "15. मानव जीवन में सुख ही नहीं, दुःख भी होता है।",
+    "options": ["A) मानव × जीवन", "B) सुख × दुःख", "C) सुख × जीवन", "D) मानव × दुःख"],
+    "answer": "B) सुख × दुःख"
+  },
+  {
+    "question": "16. मैं दिन के उजाले में काम करता हूँ और अंधकार में सो जाता हूँ।",
+    "options": ["A) दिन × अंधकार", "B) उजाला × काम", "C) उजाला × अंधकार", "D) करना × सोना"],
+    "answer": "C) उजाला × अंधकार"
+  },
+  {
+    "question": "17. छोटा बालक गिरते - गिरते ही उठकर चलना सीखता है।",
+    "options": ["A) छोटा × बालक", "B) गिरना × चलना", "C) गिरना × उठना", "D) सीखना × चलना"],
+    "answer": "C) गिरना × उठना"
+  },
+  {
+    "question": "18. हम मिलजुलकर संतोष रहते हैं और अकेले में ही असंतोष रहते हैं।",
+    "options": ["A) संतोष × असंतोष", "B) मिलजुलकर × अकेले", "C) खुश × अकेले", "D) संतोष × रहना"],
+    "answer": "A) संतोष × असंतोष"
+  },
+  {
+    "question": "19. यह बस शहर में आने जाने के लिए रखी गयी।",
+    "options": ["A) आना × जाना", "B) शहर × बस", "C) जाना × बस", "D) के लिए × रखी"],
+    "answer": "A) आना × जाना"
+  },
+  {
+    "question": "20. उस मटके को खाली मत छोड़ो उसे पानी से भरकर रखो।",
+    "options": ["A) मटके × रखो", "B) खाली × भरना", "C) पानी × मटका", "D) रखो × खाली"],
+    "answer": "B) खाली × भरना"
+  },
+  {
+    "question": "21. दिन के तम में सपना जगता है।",
+    "options": ["A) दिन के तम में सपने जगते हैं।", "B) दिन के तम में सपनाएँ जगता है।", "C) दिन के तम में सपनायों जगाता है।", "D) दिन के तम में सपनायाँ जगाता है।"],
+    "answer": "A) दिन के तम में सपने जगते हैं।"
+  },
+  {
+    "question": "22. वर्षा मे झिल्ली बजती है।",
+    "options": ["A) वर्षा में झिल्लियों बजती है।", "B) वर्षा में झिल्लियाँ बजती हैं।", "C) वर्षा में झिल्लिएँ बजती है।", "D) वर्षा में झिल्ली बजती हैं।"],
+    "answer": "B) वर्षा में झिल्लियाँ बजती हैं।"
+  },
+  {
+    "question": "23. धरती पर धारा झरती है।",
+    "options": ["A) धरती पर धाराओं झरती है।", "B) धरती पर धाराएँ झरती हैं।", "C) धरती पर धारे झरती है।", "D) धरती पर धारायाँ झरती है।"],
+    "answer": "B) धरती पर धाराएँ झरती हैं।"
+  },
+  {
+    "question": "24. तरु से बूँद गिरती है।",
+    "options": ["A) तरुओं से बूँदों गिरती हैं।", "B) तरुओं से बूँदी गिरती हैंslide", "C) तरु से बूँदें गिरती हैं।", "D) तरुओं से बूँदा गिरती हैं।"],
+    "answer": "C) तरु से बूँदें गिरती हैं।"
+  },
+  {
+    "question": "25. इनकी प्रमुख रचना चिदंबरा है।",
+    "options": ["A) इनकी प्रमुख रचने चिदंबरा है।", "B) उसकी प्रमुख रचना चिदंबरा है।", "C) इनकी प्रमुख रचनाओं चिदंबरा है।", "D) इनकी प्रमुख रचनायाँ चिदंबरा है।"],
+    "answer": "B) उसकी प्रमुख रचना चिदंबरा है।"
+  },
+  {
+    "question": "26. प्रस्तुत कविता गेय योग्य है।",
+    "options": ["A) प्रस्तुत कविते गेय योग्य है।", "B) प्रस्तुत कवितायाँ गेय योग्य है./", "C) प्रस्तुत कविताओं गेय योग्य है", "D) प्रस्तुत कविताएँ गेय योग्य हैं।"],
+    "answer": "D) प्रस्तुत कविताएँ गेय योग्य हैं।"
+  },
+  {
+    "question": "27. वर्षा के समय प्रकृति की शोभा देखने लायक होती है।",
+    "options": ["A) वर्षा के समय प्रकृति की शोभाएँ देखने लायक होती हैं।", "B) वर्षा के समय  प्रकृति की शोभे देखने लायक होती है।", "C) वर्षा के समय प्रकृति की शोभाओं देखने लायक होती है।", "D) वर्षा के समय प्रकृति की शोभायाँ देखने लायक होती है।"],
+    "answer": "A) वर्षा के समय प्रकृति की शोभाएँ देखने लायक होती हैं।"
+  },
+  {
+    "question": "28. वर्षा ऋतु सबको प्रिय है।",
+    "options": ["A) वर्षा ऋतुयाँ सब को प्रिय है।", "B) वर्षा ऋतुओं सब को प्रिय है।", "C) वर्षा ऋतुएँ सबको प्रिय हैं।", "D) वर्षा ऋतु सब को प्रिय है।"],
+    "answer": "C) वर्षा ऋतुएँ सबको प्रिय हैं।"
+  },
+  {
+    "question": "29. इंद्रधनुष के झूले में झूलें।",
+    "options": ["A) इंद्रधनुष के झूला में झूलें।", "B) इंद्रधनुष के झूलों में झूलें।", "C) इंद्रधनुष के झूलाएँ में झूलें।", "D) इंद्रधनुष के झूलायों में झूलें।"],
+    "answer": "B) इंद्रधनुष के झूलों में झूलें।"
+  },
+  {
+    "question": "30. 'बजती' शब्द का सही प्रयोग किस वाक्य में हुआ है ?",
+    "options": ["A) अ सही है", "B) आ सही है।", "C) अ और आ सही है।", "D) अ और आ गलत है।"],
+    "answer": "A) अ सही है"
+  },
+  {
+    "question": "31. 'गर्जन' शब्द का सही प्रयोग किस वाक्य में हुआ है ?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही है।", "D) अ और आ गलत है।"],
+    "answer": "A) अ सही है।"
+  },
+  {
+    "question": "32. 'झूलना' शब्द का सही प्रयोग किस वाक्य में हुआ है ?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही हैं।", "D) अ और आ गलत हैं।"],
+    "answer": "A) अ सही है।"
+  },
+  {
+    "question": "33. 'धाराएँ' शब्द का सही प्रयोग किस वाक्य में हुआ है?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही हैं।", "D) अ और आ गलत हैं।"],
+    "answer": "B) आ सही है।"
+  },
+  {
+    "question": "34. 'फिर - फिर' शब्द का सही प्रयोग किस वाक्य में हुआ है ?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही हैं।", "D) अ और आ गलत हैं।"],
+    "answer": "B) आ सही है।"
+  },
+  {
+    "question": "35. 'मन भावन' शब्द का सही प्रयोग किस वाक्य में हुआ है ?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही हैं।", "D) अ और आ गलत हैं।"],
+    "answer": "A) अ सही है।"
+  },
+  {
+    "question": "36. 'रोम सिहर उठना' शब्द का सही प्रयोग किस वाक्य में हुआ है ?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही हैं।", "D) अ और आ गलत हैं।"],
+    "answer": "A) अ सही है।"
+  },
+  {
+    "question": "37. 'घिर जाना' शब्द का सही प्रयोग किस वाक्य में हुआ है?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही हैं।", "D) अ और आ गलत है।"],
+    "answer": "B) आ सही है।"
+  },
+  {
+    "question": "38. 'चमकना' शब्द का सही प्रयोग किस वाक्य में हुआ है ?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही हैं।", "D) अ और आ गलत हैं।"],
+    "answer": "C) अ और आ सही हैं।"
+  },
+  {
+    "question": "39. 'सुnderता' शब्द का सही प्रयोग किस वाक्य में हुआ है ?",
+    "options": ["A) अ सही है।", "B) आ सही है।", "C) अ और आ सही है", "D) अ और आ गलत हैं।"],
+    "answer": "A) अ सही है।"
+  },
+  {
+    "question": "40. सावन में काले बादल बरसते हैं।",
+    "options": ["A) गगन, अंबर", "B) सागर, सरित्पति", "C) मेघ, जलधर, घन", "D) पानी, जल"],
+    "answer": "C) मेघ, जलधर, घन"
+  },
+  {
+    "question": "41. तरुओं से बूँदें गिरती हैं।",
+    "options": ["A) पेड़, वृक्ष", "B) पेड़, फल", "C) फूल, फल", "D) पेड़, भूमि"],
+    "answer": "A) पेड़, वृक्ष"
+  },
+  {
+    "question": "42. घन के उर में बिजली चमकती है।",
+    "options": ["A) उम्र, आयु", "B) हृदय, मन", "C) मन, तन", "D) दिल, हाल"],
+    "answer": "B) हृदय, मन"
+  },
+  {
+    "question": "43. दिन के तम में मन के सपने जगते हैं।",
+    "options": ["A) तिमिर, अंधकार", "B) अंधेरा, रोशनी", "C) प्रकाश, तमस", "D) अंधियारा, किरणें"],
+    "answer": "A) तिमिर, अंधकार"
+  },
+  {
+    "question": "44. मेघ गगन में गर्जन करते हैं।",
+    "options": ["A) अंबर, पृथ्वी", "B) नभ, मेघ", "C) आसमान, अंबर", "D) रवि, अंबर"],
+    "answer": "C) आसमान, अंबर"
+  },
+  {
+    "question": "45. धरती पर वर्षा की धाराएँ झरती हैं।",
+    "options": ["A) भूमि, आकाश", "B) भूमि, पृथ्वी, वसुंधरा", "C) चाँद, जमीन", "D) भूमि, मेघ"],
+    "answer": "B) भूमि, पृथ्वी, वसुंधरा"
+  },
+  {
+    "question": "46. रज के कण-कण में कोमल अंकुर फूटते हैं।",
+    "options": ["A) मिट्टी, धूलि", "B) रेत, कण", "C) धूल, फेन", "D) धुआँ, हिम"],
+    "answer": "A) मिट्टी, धूलि"
+  },
+  {
+    "question": "47. वर्षा के समय दादुर टरते हैं।",
+    "options": ["A) मछली, झिल्ली", "B) मगर मच्छ, मछली", "C) मेंढ़क, मंडूक", "D) मेढ़क, मोर"],
+    "answer": "C) मेंढ़क, मंडूक"
+  },
+  {
+    "question": "48. पकड वारि की धार झूलता है मेरा मन।",
+    "options": ["A) पानी, जल", "B) पानी, पेट्रोल", "C) जल, दूध", "D) तेल, जल"],
+    "answer": "A) पानी, जल"
+  },
+  {
+    "question": "49. बादलों को देखकर मोर कूकता है।",
+    "options": ["A) सारंग, हिरण", "B) शिखावल, चातक", "C) ध्वनी, ध्वज", "D) मयूर, केकी, शिखी"],
+    "answer": "D) मयूर, केकी, शिखी"
+  },
+  {
+    "question": "50. बिजली चम- चम चमकती है। उसकी ______ सबका मन मोह लेती है।",
+    "options": ["A) चमक", "B) महक", "C) झलक", "D) नमक"],
+    "answer": "A) चमक"
+  },
+  {
+    "question": "51. आम मीठा फल है। सबको उसकी ______ पसंद है।",
+    "options": ["A) विकास", "B) मिठास", "C) निवास", "D) खास"],
+    "answer": "B) मिठास"
+  },
+  {
+    "question": "52. पंतजी ______ में काव्य पाठ के लिए पुरस्कृत किये गये थे।",
+    "options": ["A) बूढापन", "B) लालचीपन", "C) बचपन", "D) यौव्वन"],
+    "answer": "C) बचपन"
+  },
+  {
+    "question": "53. मोर सुंदर पक्षी है। उसकी ______ देखने लायक होती है।",
+    "options": ["A) सुंदरता", "B) सुधरता", "C) तत्परता", "D) सरलता"],
+    "answer": "A) सुंदरता"
+  },
+  {
+    "question": "54. परीक्षा में प्रथम अंक आने पर वह खुश है। उसके पिता की ______ का ठिकाना न रहा।",
+    "options": ["A) खुदी", "B) खुली", "C) कुशी", "D) खुशी"],
+    "answer": "D) खुशी"
+  },
+  {
+    "question": "55. प्रकृति हरी - भरी रहती है। उसकी ______ बहुत सुंदर है।",
+    "options": ["A) हरियाली", "B) मतवाली", "C) बतियाली", "D) उजियाली"],
+    "answer": "A) हरियाली"
+  },
+  {
+    "question": "56. वर्षा के समय चातक पक्षी उडते हैं। उनकी ______ बहुत ऊँची है।",
+    "options": ["A) मुस्कान", "B) दुकान", "C) उडान", "D) मैदान"],
+    "answer": "C) उडान"
+  },
+  {
+    "question": "57. कविता सौंदर्य बोध को सजाती है। उसकी ______ अच्छी है।",
+    "options": ["A) बनावट", "B) सजावट", "C) रुकावट", "D) दिखावट"],
+    "answer": "B) सजावट"
+  },
+  {
+    "question": "58. वर्षा से धरती भी प्रसन्न होती है। उसकी ______ कण - कण में दिखाई पडती है।",
+    "options": ["A) प्रसन्नता", "B) संपन्नता", "C) विनम्रता", "D) उत्पन्नता"],
+    "answer": "A) प्रसन्नता"
+  },
+  {
+    "question": "59. ईमानदारी सबसे अच्छी नीति है। उसकी ______ के कारण उसे पसंद करते हैं।",
+    "options": ["A) कटाई", "B) अच्छाई", "C) कमाई", "D) सच्चाई"],
+    "answer": "B) अच्छाई"
+  },
+  {
+    "question": "60. 'मेरा मन झूलता है।' यह किस प्रकार का वाक्य है?",
+    "options": ["A) संकेतार्थक वाक्य", "B) विधानार्थक वाक्य", "C) संदेहार्थक वाक्य", "D) प्रश्नार्थक वाक्य"],
+    "answer": "B) विधानार्थक वाक्य"
+  },
+  {
+    "question": "61. पानी का मुख्य आधार वर्षा ही है। यह किस प्रकार का वाक्य है?",
+    "options": ["A) विधानार्थक वाक्य", "B) प्रश्नार्थक वाक्य", "C) संकेतार्थक वाक्य", "D) विस्मयार्थक वाक्य"],
+    "answer": "D) विस्मयार्थक वाक्य"
+  },
+  {
+    "question": "62. इंद्रधनुष के झूले में सब जन झूलें। यह किस प्रकार का वाक्य है ?",
+    "options": ["A) विधानार्थक", "B) इच्छार्थक", "C) प्रश्नार्थक", "D) संकेतार्थक"],
+    "answer": "B) इच्छार्थक"
+  },
+  {
+    "question": "63. अगर वर्षा आये तो यह प्रांत डूब जाता है। यह किस प्रकार का वाक्य है?",
+    "options": ["A) विधानार्थक", "B) इच्छार्थक", "C) संकेतार्थक", "D) प्रश्नार्थक"],
+    "answer": "C) संकेतार्थक"
+  },
+  {
+    "question": "64. मानव जीवन में वर्षा का क्या महत्व है ? यह किस प्रकार का वाक्य है ?",
+    "options": ["A) विधानार्थक", "B) प्रश्नार्थक", "C) इच्छार्थक", "D) निषेधार्थक"],
+    "answer": "B) प्रश्नार्थक"
+  },
+  {
+    "question": "65. वर्षा के बिना हरियाली नहीं दिखाई देती है। यह किस प्रकार का वाक्य है?",
+    "options": ["A) निषेधार्थक", "B) इच्छार्थक", "C) प्रश्नार्थक", "D) संदेहार्थक"],
+    "answer": "A) निषेधार्थक"
+  },
+  {
+    "question": "66. वाह ! इंद्रधनुष कितना सुंदर है। यह किस प्रकार का वाक्य है ?",
+    "options": ["A) विस्मयार्थक", "B) संदेहार्थक", "C) संकेतार्थक", "D) इच्छार्थक"],
+    "answer": "A) विस्मयार्थक"
+  },
+  {
+    "question": "67. आओ सब लोग मुझे घेरकर गाओ। यह किस प्रकार का वाक्य है?",
+    "options": ["A) प्रश्नार्थक", "B) आज्ञार्थक", "C) संदेहार्थक", "D) संकेतार्थक"],
+    "answer": "B) आज्ञार्थक"
+  },
+  {
+    "question": "68. बरसते पानी से सबका मन पुलकित होता है। इस वाक्य में कारक चिह्न कौनसा है?",
+    "options": ["A) बरसते", "B) पानी", "C) से", "D) पुलकित"],
+    "answer": "C) से"
+  },
+  {
+    "question": "69. धाराओं पर धाराएँ झरती धरती पर। इस वाक्य में कारक चिह्न कौनसा है?",
+    "options": ["A) धाराओं", "B) पर", "C) धरती", "D) झरती"],
+    "answer": "B) पर"
+  },
+  {
+    "question": "70. हम झूले में झूलना चाहते हैं। इस वाक्य में कारक चिह्न कौनसा है?",
+    "options": ["A) इंद्रधनुष", "B) झूले", "C) से", "D) में"],
+    "answer": "D) में"
+  },
+  {
+    "question": "71. वर्षा की धाराएँ  धरती पर झरती हैं। इस वाक्य में कारक चिह्न कौनसा है?",
+    "options": ["A) की", "B) झूला", "C) पर", "D) हम"],
+    "answer": "A) की"
+  },
+  {
+    "question": "72. मेघों के आपसी टकराव से बिजली होती है। इस वाक्य में कारक चिह्न कौनसे हैं?",
+    "options": ["A) मेघों", "B) टकराव", "C) के, से", "D) से"],
+    "answer": "C) के, से"
+  },
+  {
+    "question": "73. दिन के तम में सपने जगते हैं। इस वाक्य में कारक चिह्न कौनसे हैं?",
+    "options": ["A) दिन", "B) तम", "C) के, में", "D) में"],
+    "answer": "C) के, में"
+  },
+  {
+    "question": "74. अधिक वर्षा से फसलें सड जाती हैं। इस वाक्य में कारक चिह्न कौनसा है?",
+    "options": ["A) वर्षा", "B) से", "C) फसलें", "D) सड"],
+    "answer": "B) से"
+  },
+  {
+    "question": "75. आसमान में काले बादल छा जाते हैं। इस वाक्य में कारक चिह्न कौनसा है?",
+    "options": ["A) आसमान", "B) काले", "C) में", "D) बादल"],
+    "answer": "C) में"
+  },
+  {
+    "question": "76. निम्न विकल्पों में से संयुक्त वाक्य का उदाहरण यह है।",
+    "options": ["A) वर्षा के समय मैढक टर टर करते हैं और मौर कूकते हैं।", "B) वर्षा के समय मेंढक के साथ मोर कूकते हैं।", "C) वर्षा के समय मेंढक ही नहीं बल्कि मोर कूकते हैं।", "D) जब वर्षा होती है तब मेंढक और मोर कूकते हैं।"],
+    "answer": "A) वर्षा के समय मैढक टर टर करते हैं और मौर कूकते हैं।"
+  },
+  {
+    "question": "77. निम्न विकल्पों में मिश्रित वाक्य का उदाहरण यह है।",
+    "options": ["A) प्रकृति की शोभा का प्रमुख कारण वर्षा है।", "B) हम कह सकते हैं कि प्रकृति की शोभा का प्रमुख कारण वर्षा है।", "C) प्रकृति की शोभा का प्रमुख कारण वर्षा और हरियाली है।", "D) प्रकृति की शोभा का प्रमुख कारण वर्षा ही नहीं हरियाली है।"],
+    "answer": "B) हम कह सकते हैं कि प्रकृति की शोभा का प्रमुख कारण वर्षा है।"
+  },
+  {
+    "question": "78. निम्न विकल्पों में से सरल वाक्य का उदाहरण यह है।",
+    "options": ["A) पानी की धाराएँ  धरती पर और पहाडों पर गिरती हैं।", "B) पानी की धाराएँ  धरती पर ही नहीं पहाडों पर भी गिरती हैं।", "C) जब पानी की धाराएँ पडती हैं तब पहाडों पर गिरती हैं।", "D) पानी की धाराएँ  धरती पर गिरती हैं।"],
+    "answer": "D) पानी की धाराएँ  धरती पर गिरती हैं।"
+  },
+  {
+    "question": "79. निम्न विकल्पों में से सरल वाक्य का उदाहरण यह है",
+    "options": ["A) प्रकृति की कई चीजें मन को छू लेती है।", "B) प्रकृति की कई चीजें मन को ही नहीं तन को छू लेती है।", "C) प्रकृति की कई चीजें मन को और तन को छू लेती है", "D) जब प्रकृति के कई चीजें मन को छू लेती है तब तन को छू लेती है।"],
+    "answer": "A) प्रकृति की कई चीजें मन को छू लेती है।"
+  },
+  {
+    "question": "80. निम्न विकल्पों में मिश्रित वाक्य का उदाहरण यह है",
+    "options": ["A) बरसते पानी से सबका मन पुलकित होता है।", "B) कवि कहते हैं कि बरसते पानी से सबका मन पुलकित होता है।", "C) पानी बरसता है इसलिए सबका मन पुलकित होता है।", "D) बरसते पानी में सबका मन पुलकित होने की बात कवि कहता है।"],
+    "answer": "B) कवि कहते हैं कि बरसते पानी से सबका मन पुलकित होता है।"
+  },
+  {
+    "question": "81. निम्न विकल्पों में से संयुक्त वाक्य का उदाहरण यह है",
+    "options": ["A) वर्षा से पेड - पौधे हरे रहते हैं और फसलें भी अच्छी होती हैं।", "B) वर्षा से पेड पौधे ही नहीं बल्कि फसलें भी अच्छी होती है।", "C) वर्षा से पेड - पौधों के सिवा फसलें अच्छी होती हैं।", "D) वर्षा से पेड - पौधों के साथ फसलें अच्छी होती है।"],
+    "answer": "A) वर्षा से पेड - पौधे हरे रहते हैं और फसलें भी अच्छी होती हैं।"
+  },
+  {
+    "question": "82. किसी व्यक्ति, प्राणी, वस्तु, स्थान या भाव का बोध करानेवाले शब्द को यह कहते हैं",
+    "options": ["A) संज्ञा", "B) सर्वनाम", "C) विशेषण", "D) क्रिया"],
+    "answer": "A) संज्ञा"
+  },
+  {
+    "question": "83. संज्ञा के स्थान पर प्रयोग किये जानेवाले शब्द को यह कहते हैं",
+    "options": ["A) संज्ञा", "B) सर्वनाम", "C) विशेषण", "D) क्रिया"],
+    "answer": "B) सर्वनाम"
+  },
+  {
+    "question": "84. संज्ञा या सर्वनाम की विशेषता बताने वाले शब्द को यह कहते हैं",
+    "options": ["A) संज्ञा", "B) सर्वनाम", "C) विशेषण", "D) क्रिया"],
+    "answer": "C) विशेषण"
+  },
+  {
+    "question": "85. किसी कार्य के करने या होने का बोध होता है, उसे यह कहते हैं",
+    "options": ["A) संज्ञा", "B) सर्वनाम", "C) क्रिया", "D) विशेषण"],
+    "answer": "C) क्रिया"
+  },
+  {
+    "question": "86. वर्षा की बूँदों से रिमझिम स्वर निकलता है। उन्हें छूने पर रोम सिहर उठते हैं। रेखांकित शब्द ' उन्हें' का सही रूप यह है",
+    "options": ["A) वह + को", "B) ये + को", "C) वे + को", "D) वह + को"],
+    "answer": "C) वे + को"
+  },
+  {
+    "question": "87. वर्षा की धाराओं को पकडने से उसका मन झूलता है। रेखांकित शब्द 'उसका' का सही रूप यह है",
+    "options": ["A) यह + का", "B) वह + का", "C) ये + का", "D) वे + का"],
+    "answer": "B) वह + का"
+  },
+  {
+    "question": "88. इससे पता चलता है कि वर्षा सभी प्राणियों के लिए जीवन का आधार है। रेखांकित शब्द 'इससे' का सही रूप यह है",
+    "options": ["A) यह + से", "B) वह + से", "C) वे + से", "D) ये + से"],
+    "answer": "A) यह + से"
+  },
+  {
+    "question": "89. उसके पानी को पाकर सभी का मन झूलने लगता है। रेखांकित शब्द 'उसके' का सही रूप यह है",
+    "options": ["A) यह + के", "B) वह + के", "C) मै + के", "D) तुम + के"],
+    "answer": "B) वह + के"
+  },
+  {
+    "question": "90. वर्षा की बूँदें  धरती को चूमती हैं तो उसकी सुगंध वर्णनातीत है। रेखांकित शब्द 'उसकी' का सही रूप यह है",
+    "options": ["A) वह + की", "B) यह + की", "C) ये + की", "D) वे + की"],
+    "answer": "A) वह + की"
+  },
+  {
+    "question": "91. गली में नलियाँ बहती हैं। उनमें बच्चे कागज़ की नावें छोडते हैं। रेखांकित शब्द 'उनमें' का सही रूप यह है",
+    "options": ["A) वह + में", "B) यह + में", "C) ये + में", "D) वे + में"],
+    "answer": "D) वे + में"
+  },
+  {
+    "question": "92. वर्षा से खेतीबाडी की जाती है। वर्षा से हमें कई लाभ हैं। रेखांकित शब्द 'हमें' का सही रूप यह हैं",
+    "options": ["A) हम + ने", "B) हम + को", "C) हम + से", "D) हम + में"],
+    "answer": "B) हम + को"
+  },
+  {
+    "question": "93. वर्षा के छूने पर मेरा मन पुलकित होता है। रेखांकित शब्द 'मेरा' का सही रूप यह है",
+    "options": ["A) मैं + रा", "B) मैं + के", "C) मैं + की", "D) मैं + का"],
+    "answer": "D) मैं + का"
+  },
+  {
+    "question": "94. वर्षा ऋतु हमेशा हमारी प्रिय ऋतु रही है। रेखांकित शब्द 'हमारी' का सही रूप यह है",
+    "options": ["A) हम + का", "B) हम + के", "C) हम + की", "D) हम + को"],
+    "answer": "C) हम + की"
+  },
+  {
+    "question": "95. तुम्हारा नाम क्या है? रेखांकित शब्द 'तुम्हारा' का सही रूप यह है",
+    "options": ["A) तुम + रा", "B) तुम + हारा", "C) तुम + के", "D) तुम + का"],
+    "answer": "B) तुम + हारा"
+  },
+  {
+    "question": "96. राम धीरे - धीरे चलता है। रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "D) क्रिया विशेषण"
+  },
+  {
+    "question": "97. बहुत बारिश हो रही थी इसलिए मैच रद्द हो गया। रेखांकित शब्द का अव्यय पहचानिए",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "C) समुच्चय बोधक"
+  },
+  {
+    "question": "98. मैं ने महेश को बुलाया। लेकिन वह नहीं आ सका। रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "C) समुच्चय बोधक"
+  },
+  {
+    "question": "99. गाय को घर के सामने बाँधा। रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "A) संबंध बोधक"
+  },
+  {
+    "question": "100. अरे ! तुम यहाँ क्या कर रहे हो? रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "B) विस्मयादि बोधक"
+  },
+  {
+    "question": "101. वाह ! क्या बात है? रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "B) विस्मयादि बोधक"
+  },
+  {
+    "question": "102. छुट्टी हुई और बच्चे भागने लगे। रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "C) समुच्चय बोधक"
+  },
+  {
+    "question": "103. धन के बिना व्यवसाय चलाना कठिन है। रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "A) संबंध बोधक"
+  },
+  {
+    "question": "104. उतना बोलो, जितना ज़रूरी है। रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "D) क्रिया विशेषण"
+  },
+  {
+    "question": "105. राम वहाँ टहलता है। रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "D) क्रिया विशेषण"
+  },
+  {
+    "question": "106. सुनीता नीचे बैठी है। रेखांकित शब्द का अव्यय पहचानिए।",
+    "options": ["A) संबंध बोधक", "B) विस्मयादि बोधक", "C) समुच्चय बोधक", "D) क्रिया विशेषण"],
+    "answer": "D) क्रिया विशेषण"
+  },
+  {
+    "question": "107. सन् उन्नीस सौ सतहत्तर में पंतजी चल बसे। रेखांकित शब्द का अंक पहचानिए।",
+    "options": ["A) 1967", "B) 1977", "C) 1987", "D) 1997"],
+    "answer": "B) 1977"
+  },
+  {
+    "question": "108. उन्नीस सौ सत्तर (अंकों में पहचानिए।)",
+    "options": ["A) 1967", "B) 1977", "C) 1947", "D) 1970"],
+    "answer": "D) 1970"
+  },
+  {
+    "question": "109. किताब में एक हज़ार निन्यानवे पृष्ठ हैं। (रेखांकित शब्दों को अंकों में पहचानिए।)",
+    "options": ["A) 1099", "B) 1199", "C) 1119", "D) 1919"],
+    "answer": "A) 1099"
+  },
+  {
+    "question": "110. एक हज़ार नौ सौ सैंतालीस में भारत स्वतंत्र हुआ। (रेखांकित शब्दों को अंकों में पहचानिए।)",
+    "options": ["A) 1937", "B) 1967", "C) 1947", "D) 1987"],
+    "answer": "C) 1947"
+  },
+  {
+    "question": "111. एक लीप वर्ष में तीन सौ छियासठ दिन होते हैं। रेखांकित शब्दों को अंकों में पहचानिए।",
+    "options": ["A) 364", "B) 367", "C) 366", "D) 360"],
+    "answer": "C) 366"
+  },
+  {
+    "question": "112. 'चम - चम बिजली चमक रही रे उर में घन के' इस वाक्य में पुनरुक्ति शब्द यह है",
+    "options": ["A) बिजली, चमक", "B) चम - चम", "C) घन के", "D) उर में"],
+    "answer": "B) चम - चम"
+  },
+  {
+    "question": "113. 'फिर - फिर आये जीवन में सावन मन भावन'। इस वाक्य में पुनरुक्ति शब्द यह है -",
+    "options": ["A) मन", "B) मन भावन", "C) फिर-फिर", "D) सावन मन"],
+    "answer": "C) फिर-फिर"
+  },
+  {
+    "question": "114. आँखों की कोरों से ओस की बूँदों सा कभी कभी झर जाता है। पुनरुक्ति शब्द पहचानिए।",
+    "options": ["A) आँखों की कोर", "B) ओस की बूँदों", "C) कभी - कभी", "D) झर जाता"],
+    "answer": "C) कभी - कभी"
+  },
+  {
+    "question": "115. बेटी घर- घर की खुशी है। पुनरुक्ति शब्द पहचानिए।",
+    "options": ["A) बेटी", "B) घर - घर", "C) खुशी", "D) है"],
+    "answer": "B) घर - घर"
+  },
+  {
+    "question": "116. बेटी माँ की खुशी के लिए दूर दूर तक जाती है। पुनरुक्ति शब्द पहचानिए।",
+    "options": ["A) बेटी", "B) खुशी", "C) तक", "D) दूर - दूर"],
+    "answer": "D) दूर - दूर"
+  },
+  {
+    "question": "117. चम-चम बिजली चमक रही रे उर में घन के। पुनरुक्ति शब्द पहचानिए।",
+    "options": ["A) बिजली", "B) चमक", "C) रही", "D) चम-चम"],
+    "answer": "D) चम-चम"
+  },
+  {
+    "question": "118. पानी की बूँदें छम-छम गिरती हैं। पुनरुक्त शब्द पहचानिए।",
+    "options": ["A) पानी", "B) छम-छम", "C) बूँदें", "D) गिरती"],
+    "answer": "B) छम-छम"
+  },
+  {
+    "question": "119. थम-थम दिन के तम में सपने जगते हैं। पुनरुक्ति शब्द पहचानिए।",
+    "options": ["A) थम-थम", "B) दिन", "C) तम", "D) सपने"],
+    "answer": "A) थम-थम"
+  },
+  {
+    "question": "120. मेघ गगन में घुमड-घुमड कर गर्जन करते हैं। पुनरुक्त शब्द पहचानिए।",
+    "options": ["A) मेघ", "B) गगन", "C) घुमड-घुमड", "D) गर्जन"],
+    "answer": "C) घुमड-घुमड"
+  },
+  {
+    "question": "121. मोर म्यव-म्यव कूकता है। पुनरुक्त शब्द पहचानिए।",
+    "options": ["A) मोर", "B) कूकता", "C) म्यव-म्यव", "D) है"],
+    "answer": "C) म्यव-म्यव"
+  },
+  {
+    "question": "122. सावन में भूमि का कण-कण पुलकित होता है। पुनरुक्त शब्द पहचानिए।",
+    "options": ["A) भूमि", "B) पुलकित", "C) कण-कण", "D) होता"],
+    "answer": "C) कण-कण"
+  },
+  {
+    "question": "123. जीवन में सावन को फिर-फिर आना है। पुनरुक्त शब्द पहचानिए।",
+    "options": ["A) जीवन", "B) फिर-फिर", "C) सावन", "D) आना"],
+    "answer": "B) फिर-फिर"
+  },
+  {
+    "question": "124. रिमझिम रिमझिम क्या कुछ कहते बूँदों के स्वर। पुनरुक्त शब्द पहचानिए।",
+    "options": ["A) रिमझिम रिमझिम", "B) क्या", "C) कहते", "D) कुछ"],
+    "answer": "A) रिमझिम रिमझिम"
+  },
+  {
+    "question": "125. सावन के मेघ झम-झम बरसते हैं। पुनरुक्त शब्द पहचानिए।",
+    "options": ["A) सावन", "B) मेघ", "C) बरसते", "D) झम-झम"],
+    "answer": "D) झम-झम"
+  },
+  {
+    "question": "126. तरुओं से बूँदें छम-छम गिरती हैं। पुनरुक्त शब्द पहचानिए।",
+    "options": ["A) तरुओं", "B) बूँदें", "C) छम-छम", "D) गिरती"],
+    "answer": "C) छम-छम"
+  },
+  {
+    "question": "127. दादुर टर टर करते झिल्ली ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) म्यव - म्यव करते", "B) बजती झन - झन", "C) आर्द - सुख से कर क्रंदन", "D) म्यव - म्यव"],
+    "answer": "B) बजती झन - झन"
+  },
+  {
+    "question": "128. म्यव - म्यव रे मोर ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) पीउ - पीउ चातक के गण", "B) म्यव - म्यव", "C) टर - टर करते", "D) बजती झन - झन"],
+    "answer": "A) पीउ - पीउ चातक के गण"
+  },
+  {
+    "question": "129. घुमड घुमड गिर मेघ गगन में ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) कर क्रंदन", "B) चातक के गण", "C) भरते गर्जन", "D) उर में घन के"],
+    "answer": "C) भरते गर्जन"
+  },
+  {
+    "question": "130. थम - थम दिन के तम में ______ सपने रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) उर के घन के", "B) जगते मन के", "C) तरुओं से छन", "D) सावन के"],
+    "answer": "B) जगते मन के"
+  },
+  {
+    "question": "131. रिमझिम रिमझिम क्या कुछ कहते ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) बूँदों के स्वर", "B) बादलों के स्वर", "C) मोर के स्वर", "D) चातक के स्वर"],
+    "answer": "A) बूँदों के स्वर"
+  },
+  {
+    "question": "132. धाराओं पर धाराएँ ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) धरती पर", "B) झरती  धरती पर", "C) भीतर - अंतर", "D) पुलकावलि थर"],
+    "answer": "B) झरती  धरती पर"
+  },
+  {
+    "question": "133. रोम सिहर उठते छूते वे ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) भीतर - बाहर", "B) भीतर - अंदर", "C) भीतर - अंतर", "D) अंदर - अंतर"],
+    "answer": "C) भीतर - अंतर"
+  },
+  {
+    "question": "134. पकड वारि की धार झूलता है ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) उनका मन", "B) तेरा मन", "C) हमारा मन", "D) मेरा मन"],
+    "answer": "D) मेरा मन"
+  },
+  {
+    "question": "135. आओ रे सब मुझे घेरकर ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) नाचो सावन", "B) देखो सावन", "C) सुनो सावन", "D) गाओ सावन"],
+    "answer": "D) गाओ सावन"
+  },
+  {
+    "question": "136. झम झम झम झम मेघ बरसते हैं ______ रिक्त स्थान की पूर्ति विकल्पों में से पहचानिए।",
+    "options": ["A) सावन के", "B) ग्रीष्म के", "C) काशिर के", "D) वसंत के"],
+    "answer": "A) सावन के"
+  }
+];
+
+/* --- UI refs --- */
+const choiceSelect = document.getElementById('choiceSelect');
+const countSelect = document.getElementById('countSelect');
+const timeSelect = document.getElementById('timeSelect');
+const choiceCustom = document.getElementById('choiceCustom');
+const countCustom = document.getElementById('countCustom');
+const timeCustom = document.getElementById('timeCustom');
+const timerEnable = document.getElementById('timerEnable');
+const startBtn = document.getElementById('startBtn');
+const quizDiv = document.getElementById('quiz');
+const progressBar = document.getElementById('progress');
+const counterEl = document.getElementById('counter');
+const timerEl = document.getElementById('timer');
+const activityTimerEl = document.getElementById('activityTimer');
+
+const mistakeEnable = document.getElementById('mistakeEnable');
+const mistakeSelect = document.getElementById('mistakeSelect');
+const mistakeCustom = document.getElementById('mistakeCustom');
+const mistakesLeftEl = document.getElementById('mistakesLeft');
+
+const SETTINGS_KEY = 'samas_custom_settings_with_timer_v2';
+
+/* --- defaults --- */
+const defaults = {
+  choices: 4,
+  count: Math.min(24, questions.length),
+  time: 180,
+  timerEnabled: true,
+  mistakesEnabled: false,
+  mistakesAllowed: 0
+};
+
+/* --- populate selects --- */
+[3,4,5,6,'Custom'].forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; choiceSelect.appendChild(o); });
+[10,24,50,75,'All','Custom'].forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; countSelect.appendChild(o); });
+[0,60,120,180,300,600,'Custom'].forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; timeSelect.appendChild(o); });
+[0,1,2,3,5,10,'Custom'].forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; mistakeSelect.appendChild(o); });
+
+/* --- load settings or use defaults --- */
+let saved = localStorage.getItem(SETTINGS_KEY);
+let settings = saved ? JSON.parse(saved) : defaults;
+
+/* --- apply saved settings to UI --- */
+function applySettingsToUI(){
+  if ([3,4,5,6].includes(settings.choices)) { choiceSelect.value = settings.choices; choiceCustom.style.display='none'; }
+  else { choiceSelect.value='Custom'; choiceCustom.style.display=''; choiceCustom.value = settings.choices; }
+
+  if ([10,24,50,75].includes(settings.count)) { countSelect.value = settings.count; countCustom.style.display='none'; }
+  else if (settings.count === questions.length) { countSelect.value = 'All'; countCustom.style.display='none'; }
+  else { countSelect.value='Custom'; countCustom.style.display=''; countCustom.value = settings.count; }
+
+  if ([0,60,120,180,300,600].includes(settings.time)) { timeSelect.value = settings.time; timeCustom.style.display='none'; }
+  else { timeSelect.value='Custom'; timeCustom.style.display=''; timeCustom.value = settings.time; }
+
+  timerEnable.checked = !!settings.timerEnabled;
+
+  mistakeEnable.checked = !!settings.mistakesEnabled;
+  if ([0,1,2,3,5,10].includes(settings.mistakesAllowed)) { mistakeSelect.value = settings.mistakesAllowed; mistakeCustom.style.display='none'; }
+  else { mistakeSelect.value='Custom'; mistakeCustom.style.display=''; mistakeCustom.value = settings.mistakesAllowed; }
+}
+applySettingsToUI();
+
+/* --- events --- */
+let selectsDirty = false;
+choiceSelect.addEventListener('change', ()=>{ selectsDirty = true; choiceSelect.value==='Custom'?choiceCustom.style.display='':choiceCustom.style.display='none'; });
+countSelect.addEventListener('change', ()=>{ selectsDirty = true; countSelect.value==='Custom'?countCustom.style.display='':countCustom.style.display='none'; });
+timeSelect.addEventListener('change', ()=>{ selectsDirty = true; timeSelect.value==='Custom'?timeCustom.style.display='':timeCustom.style.display='none'; });
+timerEnable.addEventListener('change', ()=>{ selectsDirty = true; });
+mistakeSelect.addEventListener('change', ()=>{ selectsDirty = true; mistakeSelect.value==='Custom'?mistakeCustom.style.display='':mistakeCustom.style.display='none'; });
+mistakeEnable.addEventListener('change', ()=>{ selectsDirty = true; });
+
+/* --- helpers --- */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function sampleOptions(baseOptions, correct, n){ const pool=baseOptions.filter(x=>x!==correct); shuffle(pool); const chosen=pool.slice(0,n-1); chosen.push(correct); return shuffle(chosen); }
+function formatTime(s){ const m=Math.floor(s/60); const r=s%60; return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`; }
+
+/* Dynamic dynamic alphabet labeling for choices (0 -> A, 1 -> B...) */
+function getChoiceAlphabetLabel(num) {
+  let label = "";
+  while (num >= 0) {
+    label = String.fromCharCode((num % 26) + 65) + label;
+    num = Math.floor(num / 26) - 1;
+  }
+  return label;
+}
+
+/* --- quiz state --- */
+let currentSet=[], idx=0, userAnswers=[], timerInterval=null;
+let quizEnded=false, mistakesCount=0;
+let activityInterval=null, activityStart=null;
+
+/* --- read UI values --- */
+function readUIValues(){
+  let choicesVal = (choiceSelect.value==='Custom') ? parseInt(choiceCustom.value,10)||defaults.choices : parseInt(choiceSelect.value,10);
+  let countVal;
+  if (countSelect.value==='Custom') countVal=parseInt(countCustom.value,10)||Math.min(24,questions.length);
+  else if (countSelect.value==='All') countVal=questions.length;
+  else countVal=parseInt(countSelect.value,10);
+  let timeVal=(timeSelect.value==='Custom')?parseInt(timeCustom.value,10)||0:parseInt(timeSelect.value,10);
+  let mistakesAllowedVal = (mistakeSelect.value==='Custom') ? parseInt(mistakeCustom.value,10)||0 : parseInt(mistakeSelect.value,10);
+  return {
+    choices:Math.max(2,choicesVal),
+    count:Math.min(Math.max(1,countVal),questions.length),
+    time:Math.max(0,timeVal),
+    mistakesEnabled: !!mistakeEnable.checked,
+    mistakesAllowed: Math.max(0, isNaN(mistakesAllowedVal) ? 0 : mistakesAllowedVal )
+  };
+}
+
+/* --- activity timer --- */
+function startActivityTimer(){
+  if (activityInterval) { clearInterval(activityInterval); activityInterval=null; }
+  activityStart = Date.now();
+  activityTimerEl.textContent = formatTime(0);
+  activityInterval = setInterval(()=>{
+    const secs = Math.floor((Date.now() - activityStart)/1000);
+    activityTimerEl.textContent = formatTime(secs);
+  },1000);
+}
+function stopActivityTimer(){
+  if (activityInterval) clearInterval(activityInterval);
+  activityInterval = null;
+}
+
+/* --- countdown timer --- */
+function startTimer(sec){
+  if (timerInterval) clearInterval(timerInterval);
+  if (!sec || sec <= 0){ timerEl.textContent='--:--'; return; }
+  let remaining = sec;
+  timerEl.textContent = formatTime(remaining);
+  timerInterval = setInterval(()=>{
+    remaining--;
+    if (remaining <= 0){ clearInterval(timerInterval); timerEl.textContent='00:00'; quizEnded=true; stopActivityTimer(); showResults(); }
+    else timerEl.textContent = formatTime(remaining);
+  },1000);
+}
+
+/* --- start quiz --- */
+function startQuiz(){
+  const vals = readUIValues();
+  settings = {
+    choices: vals.choices,
+    count: vals.count,
+    time: vals.time,
+    timerEnabled: !!timerEnable.checked,
+    mistakesEnabled: vals.mistakesEnabled,
+    mistakesAllowed: vals.mistakesAllowed
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  selectsDirty = false;
+
+  const pool = JSON.parse(JSON.stringify(questions));
+  shuffle(pool);
+  currentSet = pool.slice(0, Math.min(settings.count, pool.length)).map(q => {
+    // Strip historical numerical/alphabetical indexing out of raw question text
+    const rawQuestion = q.question.replace(/^([A-Za-z0-9]+)[\s\.\-\)]+/, '');
+    // Strip pre-existing selection indicators out of raw option strings
+    const cleanAnswer = q.answer.replace(/^[A-Da-d][\s\.\-\)]+/, '');
+    const cleanOptions = q.options.map(o => o.replace(/^[A-Da-d][\s\.\-\)]+/, ''));
+    
+    return {
+      question: rawQuestion,
+      options: sampleOptions(cleanOptions, cleanAnswer, Math.min(settings.choices, cleanOptions.length)),
+      answer: cleanAnswer
+    };
+  });
+
+  idx = 0; userAnswers = new Array(currentSet.length).fill(null);
+  quizEnded = false; mistakesCount = 0;
+  updateMistakesDisplay();
+
+  stopActivityTimer();
+  startActivityTimer();
+
+  if (settings.timerEnabled && settings.time > 0) startTimer(settings.time); else startTimer(0);
+
+  renderQuestion();
+}
+
+/* --- update mistakes UI --- */
+function updateMistakesDisplay(){
+  if (settings && settings.mistakesEnabled){
+    mistakesLeftEl.style.display = '';
+    const left = Math.max(0, settings.mistakesAllowed - mistakesCount);
+    mistakesLeftEl.textContent = `Mistakes left: ${left} (allowed ${settings.mistakesAllowed})`;
+  } else {
+    mistakesLeftEl.style.display = 'none';
+  }
+}
+
+/* --- render question --- */
+function renderQuestion(){
+  if (!currentSet.length){ quizDiv.innerHTML = '<div style="padding:18px;color:#bfe">Press Start to begin</div>'; return; }
+  const q = currentSet[idx];
+  quizDiv.innerHTML = '';
+  const qText = document.createElement('div'); qText.className='question'; 
+  // Renders question index strictly as a continuous numerical sequence (1, 2, 3...)
+  qText.textContent = `${idx + 1}. ${q.question}`; quizDiv.appendChild(qText);
+  const optsWrap = document.createElement('div'); optsWrap.className='options';
+
+  q.options.forEach((opt, oIdx) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.type = 'button';
+    btn.dataset.value = opt;
+    // Renders matching choice labels alphabetically (A), B), C)...)
+    btn.textContent = `${getChoiceAlphabetLabel(oIdx)}) ${opt}`;
+    btn.addEventListener('click', () => handleAnswer(q, opt, btn));
+    optsWrap.appendChild(btn);
+  });
+
+  quizDiv.appendChild(optsWrap);
+  updateProgress();
+}
+
+/* --- handle answer --- */
+function handleAnswer(qObj, chosen, chosenBtn){
+  const buttons = Array.from(quizDiv.querySelectorAll('.answer-btn'));
+  buttons.forEach(b => b.disabled = true);
+  buttons.forEach(b => {
+    if (b.dataset.value === qObj.answer) b.classList.add('correct');
+    if (b.dataset.value === chosen && chosen !== qObj.answer) b.classList.add('incorrect');
+  });
+
+  userAnswers[idx] = chosen;
+
+  if (chosen !== qObj.answer){
+    mistakesCount++;
+    updateMistakesDisplay();
+    if (settings.mistakesEnabled && mistakesCount > settings.mistakesAllowed){
+      quizEnded = true;
+      stopActivityTimer();
+      setTimeout(()=> showResults(), 420);
+      return;
+    }
+  }
+
+  setTimeout(()=>{
+    if (quizEnded) return;
+    if (idx < currentSet.length - 1){ idx++; renderQuestion(); }
+    else { stopActivityTimer(); showResults(); }
+  }, 450);
+}
+
+/* --- progress --- */
+function updateProgress(){
+  const pct = currentSet.length>1 ? Math.round(((idx)/(Math.max(1,currentSet.length-1))) * 100) : 0;
+  progressBar.style.width = `${pct}%`;
+  counterEl.textContent = `Question ${idx+1} of ${currentSet.length}`;
+}
+
+/* --- results --- */
+function showResults(){
+  quizEnded = true;
+  if (timerInterval) clearInterval(timerInterval);
+  stopActivityTimer();
+
+  quizDiv.innerHTML = '';
+  const out = document.createElement('div'); out.style.padding='12px';
+  out.innerHTML = '<h3 style="color:#fff;margin-top:0">Results</h3>';
+  let correct = 0;
+  currentSet.forEach((q,i)=>{
+    const ua = userAnswers[i];
+    const ok = ua === q.answer;
+    if (ok) correct++;
+    
+    let uIdx = q.options.indexOf(ua);
+    let aIdx = q.options.indexOf(q.answer);
+    let userDisplay = uIdx !== -1 ? `${getChoiceAlphabetLabel(uIdx)}) ${ua}` : '—';
+    let ansDisplay = aIdx !== -1 ? `${getChoiceAlphabetLabel(aIdx)}) ${q.answer}` : q.answer;
+
+    const row = document.createElement('div'); row.style.marginBottom='10px';
+    row.innerHTML = `<strong style="color:#fff">${i + 1}. ${q.question}</strong><div style="margin-top:6px;color:${ok?'#ffd700':'#ff9aa2'}">Your: ${userDisplay}</div>${ok?'':`<div style="color:#ffd700">Ans: ${ansDisplay}</div>`}`;
+    out.appendChild(row);
+  });
+  out.innerHTML += `<div style="margin-top:12px;color:#dff"><strong>Score: ${correct} / ${currentSet.length}</strong></div>`;
+  if (settings && settings.mistakesEnabled){
+    out.innerHTML += `<div style="margin-top:8px;color:#ffb3b3"><strong>Mistakes made: ${mistakesCount} (allowed ${settings.mistakesAllowed})</strong></div>`;
+  }
+  if (activityStart){ const elapsedSecs = Math.floor((Date.now() - activityStart)/1000); out.innerHTML += `<div style="margin-top:8px;color:#ffb3b3"><strong>Elapsed time: ${formatTime(elapsedSecs)}</strong></div>`; }
+
+  const retakeBtn = document.createElement('button'); retakeBtn.textContent = 'Retake Quiz'; retakeBtn.className='small-btn'; retakeBtn.style.marginTop='12px';
+  retakeBtn.addEventListener('click', startQuiz);
+  out.appendChild(retakeBtn);
+
+  quizDiv.appendChild(out);
+  progressBar.style.width='100%';
+  counterEl.textContent = `Done — Score ${correct}/${currentSet.length}`;
+}
+
+/* --- auto-start on load --- */
+window.addEventListener('load', ()=>{ applySettingsToUI(); setTimeout(()=>{ if(!selectsDirty) startQuiz(); }, 120); });
+startBtn.addEventListener('click', startQuiz);
+
+/* --- themes --- */
+const THEMES = {
+  "Neon Night": { "--bg1":"#291c6e","--bg2":"#00167d","--panel":"#12132a","--accent":"#2debb0" },
+  "Sunset Glow": { "--bg1":"#ff7e5f","--bg2":"#feb47b","--panel":"#2e1d12","--accent":"#ffd166" },
+  "Ocean Blue": { "--bg1":"#006994","--bg2":"#003459","--panel":"#012a36","--accent":"#00e5ff" },
+  "Forest Green": { "--bg1":"#1b4332","--bg2":"#081c15","--panel":"#0f5132","--accent":"#95d5b2" },
+  "Royal Purple": { "--bg1":"#3c096c","--bg2":"#240046","--panel":"#10002b","--accent":"#9d4edd" },
+  "Golden Desert": { "--bg1":"#d97706","--bg2":"#92400e","--panel":"#78350f","--accent":"#fcd34d" },
+  "Candy Pink": { "--bg1":"#ff80ab","--bg2":"#ec407a","--panel":"#880e4f","--accent":"#f8bbd0" },
+  "Sky Cyan": { "--bg1":"#00c6ff","--bg2":"#0072ff","--panel":"#012a4a","--accent":"#90e0ef" },
+  "Elegant Gray": { "--bg1":"#2c2c2c","--bg2":"#1a1a1a","--panel":"#111111","--accent":"#bfbfbf" }
+};
+
+const themeSelect = document.getElementById('themeSelect');
+const THEME_KEY = "quiz_theme_choice";
+if (themeSelect) {
+  Object.keys(THEMES).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    themeSelect.appendChild(opt);
+  });
+
+  let savedTheme = localStorage.getItem(THEME_KEY) || "Neon Night";
+  if (!THEMES[savedTheme]) savedTheme = "Neon Night";
+  themeSelect.value = savedTheme;
+
+  function applyTheme(name){
+    const theme = THEMES[name] || THEMES["Neon Night"];
+    Object.keys(theme).forEach(key => {
+      document.documentElement.style.setProperty(key, theme[key]);
+    });
+    document.body.style.background = `radial-gradient(circle at 10% 10%, #06104a 0%, var(--bg1) 25%, var(--bg2) 70%)`;
+    localStorage.setItem(THEME_KEY, name);
+  }
+
+  applyTheme(savedTheme);
+  themeSelect.addEventListener('change', ()=>{ applyTheme(themeSelect.value); });
+}
+</script>
+</body>
+</html>
